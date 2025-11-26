@@ -1,6 +1,8 @@
 # Timing-the-world
 Global Market Monitor / 全球金融市场时区监控台
 
+# https://a1hana.github.io/Timing-the-world/
+
 🌐 Project Overview
 
 Global Market Monitor is a mini tool designed for financial practitioners, global teams, and cross-border business professionals.
@@ -24,7 +26,7 @@ drag-and-drop Sorting: Features an iOS-style smooth sortable interface with FLIP
 
 这是一个为金融从业者、跨国团队及跨境商务人士设计的小工具。
 
-用户不仅可以观测实时时间，还可以随意调整任意一个时区的时间，系统会自动计算并同步展示该时刻下全球其他城市的对应时间。这一功能对于安排跨国会议、推演全球市场开盘时间或回溯历史行情至关重要。
+用户不仅可以观测实时时间，还可以随意调整任意一个时区的时间，系统会自动计算并同步展示该时刻下全球其他城市的对应时间。主要用于安排跨国会议、推演全球市场开盘时间和回溯历史行情。
 
 ✨ 核心功能
 
@@ -37,6 +39,9 @@ drag-and-drop Sorting: Features an iOS-style smooth sortable interface with FLIP
 🌍 全球数据覆盖：基于 IANA 时区数据库，支持通过城市、国家或 GMT 偏移量进行智能搜索。
 
 ⚡ 轻量级架构：纯静态网页实现，无需后端服务器，加载速度极快。
+
+
+
 
 
 
