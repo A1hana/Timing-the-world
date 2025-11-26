@@ -1,10 +1,6 @@
 # Timing-the-world
 Global Market Monitor / 全球金融市场时区监控台
 
-English | 中文
-
-<a name="english"></a>
-
 🌐 Project Overview
 
 Global Market Monitor is a mini tool designed for financial practitioners, global teams, and cross-border business professionals.
@@ -24,8 +20,6 @@ drag-and-drop Sorting: Features an iOS-style smooth sortable interface with FLIP
 ⚡ Lightweight & Fast: Built with pure HTML5, CSS3, and JavaScript. Zero backend required.
 
 
-<a name="chinese"></a>
-
 🌐 项目简介
 
 这是一个为金融从业者、跨国团队及跨境商务人士设计的小工具。
@@ -43,6 +37,8 @@ drag-and-drop Sorting: Features an iOS-style smooth sortable interface with FLIP
 🌍 全球数据覆盖：基于 IANA 时区数据库，支持通过城市、国家或 GMT 偏移量进行智能搜索。
 
 ⚡ 轻量级架构：纯静态网页实现，无需后端服务器，加载速度极快。
+
+
 
 Open index.html in any modern browser (Chrome, Edge, Safari).
 
