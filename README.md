@@ -7,7 +7,7 @@ Global Market Monitor / 全球金融市场时区监控台
 
 Global Market Monitor is a mini tool designed for financial practitioners, global teams, and cross-border business professionals.
 
-It allows users not only to observe real-time data but also to adjust the time in any specific timezone, instantly synchronizing all other clocks to the corresponding local time. This feature is crucial for scheduling cross-border meetings or analyzing historical market data across different exchanges.
+It allows users not only to observe real-time data and info of exchanges but also to adjust the time in any specific timezone, instantly synchronizing all other clocks to the corresponding local time. This feature is crucial for scheduling cross-border meetings or analyzing historical market data across different exchanges.
 
 ✨ Key Features
 
@@ -26,7 +26,7 @@ drag-and-drop Sorting: Features an iOS-style smooth sortable interface with FLIP
 
 这是一个为金融从业者、跨国团队及跨境商务人士设计的小工具。
 
-用户不仅可以观测实时时间，还可以随意调整任意一个时区的时间，系统会自动计算并同步展示该时刻下全球其他城市的对应时间。主要用于安排跨国会议、推演全球市场开盘时间和回溯历史行情。
+用户不仅可以观测实时时间和全球交易所开盘情况，还可以随意调整任意一个时区的时间，系统会自动计算并同步展示该时刻下全球其他城市的对应时间。主要用于安排跨国会议、推演全球市场开盘时间和回溯历史行情。
 
 ✨ 核心功能
 
