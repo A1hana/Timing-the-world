@@ -241,12 +241,10 @@
             color-scheme: dark; 
         }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-        
-            /* 增加一点背景和悬停效果，提升可见度 */
             cursor: pointer;
             opacity: 0.6;
             transition: opacity 0.2s;
-            padding: 4px; /* 增加点击区域 */
+            padding: 4px; 
         }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
             opacity: 1;
@@ -254,7 +252,7 @@
             border-radius: 4px;
         }
 
-        
+        /* 滚动条美化 */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-color); }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
@@ -296,20 +294,40 @@
 
         // --- 配置数据 ---
 
-        // 1. 城市/时区映射
+        // 1. 扩充后的城市/时区映射
         const CITY_MAPPING = {
+            // 亚洲
             'Asia/Shanghai': { flag: '🇨🇳', cities: '北京, 上海' },
             'Asia/Hong_Kong': { flag: '🇭🇰', cities: '香港' },
-            'Asia/Tokyo': { flag: '🇯🇵', cities: '东京' },
+            'Asia/Tokyo': { flag: '🇯🇵', cities: '东京, 大阪' },
             'Asia/Seoul': { flag: '🇰🇷', cities: '首尔' },
             'Asia/Singapore': { flag: '🇸🇬', cities: '新加坡' },
+            'Asia/Dubai': { flag: '🇦🇪', cities: '迪拜' },
+            'Asia/Bangkok': { flag: '🇹🇭', cities: '曼谷' },
+            'Asia/Kolkata': { flag: '🇮🇳', cities: '孟买, 新德里' },
+            'Asia/Taipei': { flag: '🇹🇼', cities: '台北' },
+            
+            // 欧洲
             'Europe/London': { flag: '🇬🇧', cities: '伦敦' },
             'Europe/Berlin': { flag: '🇩🇪', cities: '法兰克福, 柏林' },
             'Europe/Paris': { flag: '🇫🇷', cities: '巴黎' },
-            'America/New_York': { flag: '🇺🇸', cities: '纽约' },
+            'Europe/Zurich': { flag: '🇨🇭', cities: '苏黎世' },
+            'Europe/Moscow': { flag: '🇷🇺', cities: '莫斯科' },
+            'Europe/Rome': { flag: '🇮🇹', cities: '罗马' },
+            'Europe/Amsterdam': { flag: '🇳🇱', cities: '阿姆斯特丹' },
+            
+            // 美洲
+            'America/New_York': { flag: '🇺🇸', cities: '纽约, 华盛顿' },
             'America/Chicago': { flag: '🇺🇸', cities: '芝加哥' },
+            'America/Los_Angeles': { flag: '🇺🇸', cities: '洛杉矶, 旧金山' },
             'America/Toronto': { flag: '🇨🇦', cities: '多伦多' },
-            'Australia/Sydney': { flag: '🇦🇺', cities: '悉尼' }
+            'America/Vancouver': { flag: '🇨🇦', cities: '温哥华' },
+            'America/Sao_Paulo': { flag: '🇧🇷', cities: '圣保罗' },
+            
+            // 澳洲/太平洋
+            'Australia/Sydney': { flag: '🇦🇺', cities: '悉尼' },
+            'Australia/Melbourne': { flag: '🇦🇺', cities: '墨尔本' },
+            'Pacific/Auckland': { flag: '🇳🇿', cities: '奥克兰' }
         };
 
         // 2. 交易所交易时间数据 (Local Time)
@@ -338,16 +356,16 @@
         function init() {
             initSearchList();
             
-            // 默认显示6个时区
-            addZoneData('Asia/Shanghai');
-            addZoneData('Asia/Hong_Kong');
-            addZoneData('Asia/Tokyo');
-            addZoneData('Europe/Berlin'); // 法兰克福
-            addZoneData('Europe/London');
-            addZoneData('America/New_York');
+            // 默认显示6个时区：北京、纽约、洛杉矶、伦敦、东京、悉尼
+            addZoneData('Asia/Shanghai');       // 北京
+            addZoneData('America/New_York');    // 纽约
+            addZoneData('America/Los_Angeles'); // 洛杉矶
+            addZoneData('Europe/London');       // 伦敦
+            addZoneData('Asia/Tokyo');          // 东京
+            addZoneData('Australia/Sydney');    // 悉尼
 
             renderGrid();
-            renderSidebar(); // 初始渲染侧边栏
+            renderSidebar(); 
             startLoop();
         }
 
@@ -398,7 +416,6 @@
                 let statusClass = 'status-close';
 
                 // 简单的开闭市判断 (不包含周末判断，仅基于时间)
-                // 严谨的金融项目需要加入 Weekend 和 Holiday 判断，此处为 Time Reference 核心逻辑
                 const isWeekend = (dt.weekday === 6 || dt.weekday === 7);
 
                 if (!isWeekend && timeVal >= openVal && timeVal < closeVal) {
