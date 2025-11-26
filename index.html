@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Market Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.4/luxon.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #141517;
+            --card-bg: #1e1f23;
+            --card-hover: #25262b;
+            --text-main: #e9ecef;
+            --text-sub: #909296;
+            --border-color: #2c2e33;
+            --btn-bg: #2c2e33;
+            --btn-border: #495057;
+            --btn-text: #ced4da;
+            --btn-hover: #373a40;
+            --btn-active-accent: #1864ab;
+            --clock-face: #1A1B1E;
+            --marker-major: #dee2e6;
+            --marker-minor: #495057;
+            --hand-hour: #f8f9fa;
+            --hand-min: #adb5bd;
+            --hand-sec: #c92a2a;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 1600px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px 30px;
+            border-radius: 6px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        h1 { margin: 0; font-size: 1.4rem; font-weight: 500; color: var(--text-main); letter-spacing: 0.5px; }
+        .status-dot { color: #51cf66; font-size: 0.8rem; margin-left: 10px; opacity: 0.8; }
+        .status-dot.paused { color: #ff6b6b; }
+
+        .controls { display: flex; gap: 12px; align-items: center; }
+
+        input[list] {
+            background: #141517;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 12px;
+            width: 320px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[list]:focus { border-color: #495057; }
+        
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--btn-border);
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        button:hover {
+            background-color: var(--btn-hover);
+            color: #fff;
+            border-color: #5c5f66;
+        }
+        
+        .btn-sync:hover {
+            background-color: var(--btn-active-accent);
+            border-color: var(--btn-active-accent);
+        }
+
+        .grid-container {
+            display: grid;
+            gap: 24px;
+            width: 100%;
+            max-width: 1600px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            padding-bottom: 60px;
+            align-items: start;
+            position: relative;
+        }
+
+        .clock-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: grab;
+            transform-origin: center center;
+            user-select: none; 
+            transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, background-color 0.2s;
+        }
+        
+        .clock-card:active { cursor: grabbing; }
+
+        .clock-card:hover {
+            background-color: var(--card-hover);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .clock-card.dragging {
+            opacity: 0.0; 
+            cursor: grabbing;
+        }
+        
+        .clock-card.animating {
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .card-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .zone-info { display: flex; flex-direction: column; }
+        .zone-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; }
+        .zone-offset { font-size: 0.85rem; color: var(--text-sub); }
+        
+        .btn-close {
+            background: transparent; border: none; color: var(--text-sub); 
+            padding: 0 5px; font-size: 1.4rem; line-height: 1;
+            cursor: pointer;
+        }
+        .btn-close:hover { color: #ff6b6b; }
+
+        .analog-face {
+            width: 200px; height: 200px;
+            background: var(--clock-face);
+            border-radius: 50%;
+            border: 2px solid #343a40;
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .marker {
+            position: absolute; left: 50%; top: 0;
+            width: 1px; height: 100%;
+            pointer-events: none;
+        }
+        .marker::after {
+            content: ''; position: absolute; top: 6px; left: 0; width: 100%; height: 6px; background: var(--marker-minor);
+        }
+        .marker.major::after {
+            top: 2px; height: 12px; background: var(--marker-major); width: 2px; margin-left: -0.5px;
+        }
+
+        .hand {
+            position: absolute; left: 50%; bottom: 50%;
+            transform-origin: bottom center;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .hand.hour { width: 6px; height: 50px; background: var(--hand-hour); margin-left: -3px; }
+        .hand.min { width: 4px; height: 75px; background: var(--hand-min); margin-left: -2px; }
+        .hand.sec { 
+            width: 2px; height: 90px; background: var(--hand-sec); margin-left: -1px; z-index: 11;
+        }
+        .hand.sec::after {
+            content: ''; position: absolute; top: 100%; left: -2px; width: 6px; height: 15px; 
+            background: var(--hand-sec); border-radius: 2px;
+        }
+        .center-nut {
+            position: absolute; top: 50%; left: 50%;
+            width: 8px; height: 8px; background: var(--hand-sec);
+            border-radius: 50%; transform: translate(-50%, -50%); z-index: 12;
+            border: 2px solid var(--clock-face);
+        }
+
+        input[type="datetime-local"] {
+            background-color: #141517;
+            border: 1px solid #343a40;
+            color: #ced4da;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+            font-size: 1.05rem;
+            font-weight: 500;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            outline: none;
+        }
+        input[type="datetime-local"]:focus { border-color: #adb5bd; color: #fff; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div style="display: flex; align-items: center;">
+            <h1>Global Market Monitor</h1>
+            <span id="status-indicator" class="status-dot">● LIVE</span>
+        </div>
+        
+        <div class="controls">
+            <input list="timezone-options" id="zone-input" placeholder="输入城市或 GMT+X (例如: New York)...">
+            <datalist id="timezone-options"></datalist>
+            
+            <button onclick="addCurrentSelection()">+ 添加时区</button>
+            <button class="btn-sync" onclick="syncNow()">↩ 回到当前时间</button>
+        </div>
+    </div>
+
+    <div class="grid-container" id="clock-grid"></div>
+
+    <script>
+        const DateTime = luxon.DateTime;
+
+        const CITY_MAPPING = {
+            'Asia/Shanghai': { flag: '🇨🇳', cities: '北京, 上海' },
+            'Asia/Hong_Kong': { flag: '🇭🇰', cities: '香港' },
+            'Asia/Tokyo': { flag: '🇯🇵', cities: '东京' },
+            'Asia/Singapore': { flag: '🇸🇬', cities: '新加坡' },
+            'Europe/London': { flag: '🇬🇧', cities: '伦敦' },
+            'Europe/Berlin': { flag: '🇩🇪', cities: '法兰克福, 柏林' },
+            'America/New_York': { flag: '🇺🇸', cities: '纽约' },
+            'America/Chicago': { flag: '🇺🇸', cities: '芝加哥' },
+            'America/Los_Angeles': { flag: '🇺🇸', cities: '洛杉矶' },
+            'Australia/Sydney': { flag: '🇦🇺', cities: '悉尼' }
+        };
+
+        let activeZones = [];
+        let globalTimestamp = DateTime.now().toMillis();
+        let isLive = true;
+        let timer = null;
+        let dragItem = null;
+
+        initSearchList();
+        
+        addZoneData('Asia/Shanghai');
+        addZoneData('Europe/London');
+        addZoneData('America/New_York');
+        renderGrid();
+        startLoop();
+
+        function initSearchList() {
+            const dataList = document.getElementById('timezone-options');
+            const allZones = Intl.supportedValuesOf('timeZone');
+            
+            const zoneList = allZones.map(z => {
+                const map = CITY_MAPPING[z];
+                const dt = DateTime.now().setZone(z);
+                const offset = dt.toFormat('ZZ');
+                let label = `GMT${offset}`;
+                if (map) label += ` (${map.cities})`;
+                else label += ` - ${z}`;
+                return { value: z, label: label, offsetVal: dt.offset };
+            }).sort((a,b) => a.offsetVal - b.offsetVal);
+
+            zoneList.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.label = item.label;
+                dataList.appendChild(opt);
+            });
+        }
+
+        function startLoop() {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                if (isLive) {
+                    globalTimestamp = DateTime.now().toMillis();
+                    updateViewPointers();
+                }
+            }, 1000);
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('clock-grid');
+            const existingIds = Array.from(container.children).map(c => c.dataset.id);
+            const newIds = activeZones.map(z => z.id);
+            
+            if (existingIds.join(',') === newIds.join(',')) {
+                return;
+            }
+
+            container.innerHTML = '';
+
+            activeZones.forEach((item) => {
+                const map = CITY_MAPPING[item.zone];
+                const flag = map ? map.flag : '🌐';
+                const displayName = map ? map.cities.split(',')[0] : item.zone.split('/').pop().replace('_', ' ');
+
+                const card = document.createElement('div');
+                card.className = 'clock-card';
+                card.setAttribute('draggable', 'true');
+                card.dataset.id = item.id;
+                
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="zone-info">
+                            <span class="zone-title">${flag} ${displayName}</span>
+                            <span class="zone-offset" id="txt-${item.id}">GMT...</span>
+                        </div>
+                        <button class="btn-close" onclick="removeZone('${item.id}')">×</button>
+                    </div>
+
+                    <div class="analog-face">
+                        ${generateMarkers()}
+                        <div class="hand hour" id="h-${item.id}"></div>
+                        <div class="hand min" id="m-${item.id}"></div>
+                        <div class="hand sec" id="s-${item.id}"></div>
+                        <div class="center-nut"></div>
+                    </div>
+
+                    <input type="datetime-local" 
+                           id="inp-${item.id}"
+                           onfocus="pause()"
+                           oninput="manualUpdate(this.value, '${item.zone}')">
+                `;
+                
+                addDragEvents(card);
+                container.appendChild(card);
+            });
+
+            updateViewPointers();
+        }
+
+        function generateMarkers() {
+            let html = '';
+            for(let i=0; i<60; i++){
+                const deg = i * 6;
+                const cls = (i%5===0) ? 'major' : 'minor';
+                html += `<div class="marker ${cls}" style="transform: rotate(${deg}deg)"></div>`;
+            }
+            return html;
+        }
+
+        function updateViewPointers() {
+            activeZones.forEach(item => {
+                const dt = DateTime.fromMillis(globalTimestamp).setZone(item.zone);
+                
+                const ss = dt.second;
+                const mm = dt.minute;
+                const hh = dt.hour;
+                const sDeg = ss * 6;
+                const mDeg = mm * 6 + ss * 0.1;
+                const hDeg = (hh % 12) * 30 + mm * 0.5;
+
+                const hEl = document.getElementById(`h-${item.id}`);
+                const mEl = document.getElementById(`m-${item.id}`);
+                const sEl = document.getElementById(`s-${item.id}`);
+                const inp = document.getElementById(`inp-${item.id}`);
+                const txt = document.getElementById(`txt-${item.id}`);
+
+                if(hEl) hEl.style.transform = `rotate(${hDeg}deg)`;
+                if(mEl) mEl.style.transform = `rotate(${mDeg}deg)`;
+                if(sEl) sEl.style.transform = `rotate(${sDeg}deg)`;
+                
+                if(inp && document.activeElement !== inp) {
+                    inp.value = dt.toFormat("yyyy-MM-dd'T'HH:mm:ss");
+                }
+                if(txt) txt.innerText = `GMT${dt.toFormat('ZZ')} · ${item.zone}`;
+            });
+        }
+
+        function addZoneData(zoneStr) {
+            activeZones.push({
+                id: 'z' + Date.now() + Math.random().toString(16).slice(2),
+                zone: zoneStr
+            });
+        }
+
+        function addCurrentSelection() {
+            const val = document.getElementById('zone-input').value;
+            if (Intl.supportedValuesOf('timeZone').includes(val)) {
+                addZoneData(val);
+                document.getElementById('zone-input').value = '';
+                renderGrid();
+            } else {
+                alert('请选择有效的时区');
+            }
+        }
+
+        function removeZone(id) {
+            activeZones = activeZones.filter(z => z.id !== id);
+            renderGrid();
+        }
+
+        function manualUpdate(val, zone) {
+            pause();
+            if(!val) return;
+            const dt = DateTime.fromISO(val, { zone: zone });
+            if(dt.isValid) {
+                globalTimestamp = dt.toMillis();
+                updateViewPointers();
+            }
+        }
+
+        function pause() {
+            isLive = false;
+            const el = document.getElementById('status-indicator');
+            el.innerText = '⏸ PAUSED';
+            el.classList.add('paused');
+        }
+
+        function syncNow() {
+            isLive = true;
+            globalTimestamp = DateTime.now().toMillis();
+            const el = document.getElementById('status-indicator');
+            el.innerText = '● LIVE';
+            el.classList.remove('paused');
+            updateViewPointers();
+        }
+
+        const container = document.getElementById('clock-grid');
+
+        function addDragEvents(card) {
+            card.addEventListener('dragstart', (e) => {
+                dragItem = card;
+                setTimeout(() => card.classList.add('dragging'), 0);
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            card.addEventListener('dragend', () => {
+                dragItem = null;
+                card.classList.remove('dragging');
+                syncDataOrderWithDOM();
+            });
+        }
+
+        container.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (!dragItem) return;
+
+            const siblings = [...container.querySelectorAll('.clock-card:not(.dragging)')];
+            let nextSibling = siblings.find(sibling => {
+                const rect = sibling.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const buffer = 30; 
+                
+                if (Math.abs(e.clientX - centerX) < buffer && Math.abs(e.clientY - centerY) < buffer) {
+                   return false; 
+                }
+                
+                return e.clientY < centerY || (e.clientY < rect.bottom && e.clientX < centerX);
+            });
+
+            if (nextSibling && nextSibling === dragItem.nextSibling) return;
+            if (!nextSibling && dragItem === container.lastElementChild) return;
+
+            const currentOrder = [...container.children];
+            const oldPositions = new Map();
+            currentOrder.forEach(child => {
+                const rect = child.getBoundingClientRect();
+                oldPositions.set(child, { left: rect.left, top: rect.top });
+            });
+
+            if (nextSibling) {
+                container.insertBefore(dragItem, nextSibling);
+            } else {
+                container.appendChild(dragItem);
+            }
+
+            currentOrder.forEach(child => {
+                if (child === dragItem) return;
+                const oldPos = oldPositions.get(child);
+                const newRect = child.getBoundingClientRect();
+                const deltaX = oldPos.left - newRect.left;
+                const deltaY = oldPos.top - newRect.top;
+
+                if (deltaX !== 0 || deltaY !== 0) {
+                    child.style.transition = 'none';
+                    child.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    
+                    requestAnimationFrame(() => {
+                        child.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0, 1)';
+                        child.style.transform = '';
+                    });
+                }
+            });
+        });
+
+        function syncDataOrderWithDOM() {
+            const newOrderIds = [...document.querySelectorAll('.clock-card')].map(el => el.dataset.id);
+            const newActiveZones = [];
+            newOrderIds.forEach(id => {
+                const zoneObj = activeZones.find(z => z.id === id);
+                if (zoneObj) newActiveZones.push(zoneObj);
+            });
+            activeZones = newActiveZones;
+        }
+
+    </script>
+</body>
+</html>
