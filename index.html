@@ -217,8 +217,16 @@
             box-sizing: border-box;
             text-align: center;
             outline: none;
+            color-scheme: dark; /* 让下拉日历也变成深色模式 */
         }
         input[type="datetime-local"]:focus { border-color: #adb5bd; color: #fff; }
+
+        /* 修复：将日历图标反转为白色 */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.8;
+        }
 
     </style>
 </head>
