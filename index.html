@@ -3,21 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Market Monitor</title>
+    <title>Global Market Monitor Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.4/luxon.min.js"></script>
     <style>
         :root {
+            /* 商务深色系 */
             --bg-color: #141517;
+            --sidebar-bg: #1A1B1E;
             --card-bg: #1e1f23;
             --card-hover: #25262b;
             --text-main: #e9ecef;
             --text-sub: #909296;
             --border-color: #2c2e33;
+            
+            /* 状态色 */
+            --status-open: #51cf66;  /* 开盘绿 */
+            --status-close: #fa5252; /* 收盘红 */
+            --status-break: #fab005; /* 午休黄 */
+            
+            /* 按钮与交互 */
             --btn-bg: #2c2e33;
             --btn-border: #495057;
             --btn-text: #ced4da;
             --btn-hover: #373a40;
             --btn-active-accent: #1864ab;
+
+            /* 表盘 */
             --clock-face: #1A1B1E;
             --marker-major: #dee2e6;
             --marker-minor: #495057;
@@ -31,21 +42,99 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 30px;
+            height: 100vh;
+            overflow: hidden; /* 防止双重滚动条 */
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
         }
 
+        /* --- 左侧侧边栏 (交易所参考) --- */
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-title {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .market-item {
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .market-item:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--border-color);
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .market-name { font-weight: bold; font-size: 0.95rem; }
+        
+        /* 状态指示灯 */
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; display: block; }
+        
+        .status-open { color: var(--status-open); background: rgba(81, 207, 102, 0.1); }
+        .status-open::before { background: var(--status-open); }
+        
+        .status-close { color: var(--text-sub); background: rgba(255,255,255,0.05); }
+        .status-close::before { background: var(--text-sub); }
+        
+        .status-break { color: var(--status-break); background: rgba(250, 176, 5, 0.1); }
+        .status-break::before { background: var(--status-break); }
+
+        .market-time { font-size: 0.8rem; color: var(--text-sub); }
+        .market-local-time { font-size: 0.8rem; color: var(--text-main); font-family: "Microsoft YaHei Mono", monospace; margin-top: 4px;}
+
+        /* --- 右侧主内容区 --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+        }
+
+        /* 顶部控制栏 */
         .header {
-            width: 100%;
-            max-width: 1600px;
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             padding: 20px 30px;
             border-radius: 6px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -53,9 +142,9 @@
             gap: 20px;
         }
 
-        h1 { margin: 0; font-size: 1.4rem; font-weight: 500; color: var(--text-main); letter-spacing: 0.5px; }
-        .status-dot { color: #51cf66; font-size: 0.8rem; margin-left: 10px; opacity: 0.8; }
-        .status-dot.paused { color: #ff6b6b; }
+        h1 { margin: 0; font-size: 1.4rem; font-weight: 500; letter-spacing: 0.5px; }
+        .status-dot { color: var(--status-open); font-size: 0.8rem; margin-left: 10px; opacity: 0.8; }
+        .status-dot.paused { color: var(--status-close); }
 
         .controls { display: flex; gap: 12px; align-items: center; }
 
@@ -64,12 +153,10 @@
             border: 1px solid var(--border-color);
             color: var(--text-main);
             padding: 8px 12px;
-            width: 320px;
+            width: 250px;
             border-radius: 4px;
             font-family: inherit;
-            font-size: 0.9rem;
             outline: none;
-            transition: border-color 0.2s;
         }
         input[list]:focus { border-color: #495057; }
         
@@ -81,64 +168,35 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            font-family: inherit;
+            transition: all 0.2s;
         }
-        button:hover {
-            background-color: var(--btn-hover);
-            color: #fff;
-            border-color: #5c5f66;
-        }
-        
-        .btn-sync:hover {
-            background-color: var(--btn-active-accent);
-            border-color: var(--btn-active-accent);
-        }
+        button:hover { background-color: var(--btn-hover); color: #fff; border-color: #5c5f66; }
+        .btn-sync:hover { background-color: var(--btn-active-accent); border-color: var(--btn-active-accent); }
 
+        /* 网格容器 */
         .grid-container {
             display: grid;
             gap: 24px;
-            width: 100%;
-            max-width: 1600px;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             padding-bottom: 60px;
-            align-items: start;
             position: relative;
         }
 
+        /* 时区卡片 */
         .clock-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 24px;
-            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             cursor: grab;
-            transform-origin: center center;
-            user-select: none; 
-            transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s, background-color 0.2s;
+            transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s;
         }
-        
         .clock-card:active { cursor: grabbing; }
-
-        .clock-card:hover {
-            background-color: var(--card-hover);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            z-index: 10;
-        }
-
-        .clock-card.dragging {
-            opacity: 0.0; 
-            cursor: grabbing;
-        }
-        
-        .clock-card.animating {
-            pointer-events: none;
-            z-index: 100;
-        }
+        .clock-card:hover { background-color: var(--card-hover); box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 10; }
+        .clock-card.dragging { opacity: 0.0; }
 
         .card-header {
             width: 100%;
@@ -151,154 +209,146 @@
         }
 
         .zone-info { display: flex; flex-direction: column; }
-        .zone-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; }
+        .zone-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
         .zone-offset { font-size: 0.85rem; color: var(--text-sub); }
-        
-        .btn-close {
-            background: transparent; border: none; color: var(--text-sub); 
-            padding: 0 5px; font-size: 1.4rem; line-height: 1;
-            cursor: pointer;
-        }
+        .btn-close { background: transparent; border: none; color: var(--text-sub); font-size: 1.4rem; cursor: pointer; }
         .btn-close:hover { color: #ff6b6b; }
 
+        /* 表盘样式 */
         .analog-face {
-            width: 200px; height: 200px;
+            width: 180px; height: 180px;
             background: var(--clock-face);
             border-radius: 50%;
             border: 2px solid #343a40;
             position: relative;
             margin-bottom: 24px;
         }
+        .marker { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; pointer-events: none; }
+        .marker::after { content: ''; position: absolute; top: 6px; left: 0; width: 100%; height: 6px; background: var(--marker-minor); }
+        .marker.major::after { top: 2px; height: 12px; background: var(--marker-major); width: 2px; margin-left: -0.5px; }
 
-        .marker {
-            position: absolute; left: 50%; top: 0;
-            width: 1px; height: 100%;
-            pointer-events: none;
-        }
-        .marker::after {
-            content: ''; position: absolute; top: 6px; left: 0; width: 100%; height: 6px; background: var(--marker-minor);
-        }
-        .marker.major::after {
-            top: 2px; height: 12px; background: var(--marker-major); width: 2px; margin-left: -0.5px;
-        }
-
-        .hand {
-            position: absolute; left: 50%; bottom: 50%;
-            transform-origin: bottom center;
-            border-radius: 4px;
-            z-index: 10;
-        }
-        .hand.hour { width: 6px; height: 50px; background: var(--hand-hour); margin-left: -3px; }
-        .hand.min { width: 4px; height: 75px; background: var(--hand-min); margin-left: -2px; }
-        .hand.sec { 
-            width: 2px; height: 90px; background: var(--hand-sec); margin-left: -1px; z-index: 11;
-        }
-        .hand.sec::after {
-            content: ''; position: absolute; top: 100%; left: -2px; width: 6px; height: 15px; 
-            background: var(--hand-sec); border-radius: 2px;
-        }
-        .center-nut {
-            position: absolute; top: 50%; left: 50%;
-            width: 8px; height: 8px; background: var(--hand-sec);
-            border-radius: 50%; transform: translate(-50%, -50%); z-index: 12;
-            border: 2px solid var(--clock-face);
-        }
+        .hand { position: absolute; left: 50%; bottom: 50%; transform-origin: bottom center; border-radius: 4px; z-index: 10; }
+        .hand.hour { width: 6px; height: 45px; background: var(--hand-hour); margin-left: -3px; }
+        .hand.min { width: 4px; height: 65px; background: var(--hand-min); margin-left: -2px; }
+        .hand.sec { width: 2px; height: 80px; background: var(--hand-sec); margin-left: -1px; z-index: 11; }
+        .hand.sec::after { content: ''; position: absolute; top: 100%; left: -2px; width: 6px; height: 15px; background: var(--hand-sec); border-radius: 2px; }
+        .center-nut { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: var(--hand-sec); border-radius: 50%; transform: translate(-50%, -50%); z-index: 12; border: 2px solid var(--clock-face); }
 
         input[type="datetime-local"] {
-            background-color: #141517;
-            border: 1px solid #343a40;
-            color: #ced4da;
-            padding: 8px;
-            border-radius: 4px;
-            font-family: "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
-            font-size: 1.05rem;
-            font-weight: 500;
-            width: 100%;
-            box-sizing: border-box;
-            text-align: center;
-            outline: none;
-            color-scheme: dark; /* 让下拉日历也变成深色模式 */
+            background-color: #141517; border: 1px solid #343a40; color: #ced4da;
+            padding: 8px; border-radius: 4px; font-family: "Microsoft YaHei UI", sans-serif;
+            font-size: 1rem; font-weight: 500; width: 100%; text-align: center; outline: none;
+            color-scheme: dark; 
         }
-        input[type="datetime-local"]:focus { border-color: #adb5bd; color: #fff; }
-
-        /* 修复：将日历图标反转为白色 */
         input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
+        
+            /* 增加一点背景和悬停效果，提升可见度 */
             cursor: pointer;
-            opacity: 0.8;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            padding: 4px; /* 增加点击区域 */
+        }
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
         }
 
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div style="display: flex; align-items: center;">
-            <h1>Global Market Monitor</h1>
-            <span id="status-indicator" class="status-dot">● LIVE</span>
-        </div>
-        
-        <div class="controls">
-            <input list="timezone-options" id="zone-input" placeholder="输入城市或 GMT+X (例如: New York)...">
-            <datalist id="timezone-options"></datalist>
-            
-            <button onclick="addCurrentSelection()">+ 添加时区</button>
-            <button class="btn-sync" onclick="syncNow()">↩ 回到当前时间</button>
+    <!-- 左侧交易所状态栏 -->
+    <div class="sidebar">
+        <div class="sidebar-title">Global Exchanges</div>
+        <div id="exchange-list">
+            <!-- JS 生成 -->
         </div>
     </div>
 
-    <div class="grid-container" id="clock-grid"></div>
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <div class="header">
+            <div style="display: flex; align-items: center;">
+                <h1>Global Market Monitor</h1>
+                <span id="status-indicator" class="status-dot">● LIVE</span>
+            </div>
+            
+            <div class="controls">
+                <input list="timezone-options" id="zone-input" placeholder="输入城市或 GMT+X...">
+                <datalist id="timezone-options"></datalist>
+                
+                <button onclick="addCurrentSelection()">+ 添加</button>
+                <button class="btn-sync" onclick="syncNow()">↩ 回到当前时间</button>
+            </div>
+        </div>
+
+        <div class="grid-container" id="clock-grid"></div>
+    </div>
 
     <script>
         const DateTime = luxon.DateTime;
 
+        // --- 配置数据 ---
+
+        // 1. 城市/时区映射
         const CITY_MAPPING = {
             'Asia/Shanghai': { flag: '🇨🇳', cities: '北京, 上海' },
             'Asia/Hong_Kong': { flag: '🇭🇰', cities: '香港' },
             'Asia/Tokyo': { flag: '🇯🇵', cities: '东京' },
+            'Asia/Seoul': { flag: '🇰🇷', cities: '首尔' },
             'Asia/Singapore': { flag: '🇸🇬', cities: '新加坡' },
             'Europe/London': { flag: '🇬🇧', cities: '伦敦' },
             'Europe/Berlin': { flag: '🇩🇪', cities: '法兰克福, 柏林' },
+            'Europe/Paris': { flag: '🇫🇷', cities: '巴黎' },
             'America/New_York': { flag: '🇺🇸', cities: '纽约' },
             'America/Chicago': { flag: '🇺🇸', cities: '芝加哥' },
-            'America/Los_Angeles': { flag: '🇺🇸', cities: '洛杉矶' },
+            'America/Toronto': { flag: '🇨🇦', cities: '多伦多' },
             'Australia/Sydney': { flag: '🇦🇺', cities: '悉尼' }
         };
 
+        // 2. 交易所交易时间数据 (Local Time)
+        // 注意：这里采用了标准的交易时间，暂未包含特殊的盘前盘后或节假日逻辑，作为参考使用。
+        const EXCHANGES = [
+            { name: "NYSE/Nasdaq (New York)", zone: "America/New_York", open: "09:30", close: "16:00", hasBreak: false },
+            { name: "LSE (London)", zone: "Europe/London", open: "08:00", close: "16:30", hasBreak: false },
+            { name: "Frankfurt (Xetra)", zone: "Europe/Berlin", open: "09:00", close: "17:30", hasBreak: false },
+            { name: "TSE (Tokyo)", zone: "Asia/Tokyo", open: "09:00", close: "15:00", hasBreak: true, breakStart: "11:30", breakEnd: "12:30" },
+            { name: "HKEX (Hong Kong)", zone: "Asia/Hong_Kong", open: "09:30", close: "16:00", hasBreak: true, breakStart: "12:00", breakEnd: "13:00" },
+            { name: "SSE (Shanghai)", zone: "Asia/Shanghai", open: "09:30", close: "15:00", hasBreak: true, breakStart: "11:30", breakEnd: "13:00" },
+            { name: "ASX (Sydney)", zone: "Australia/Sydney", open: "10:00", close: "16:00", hasBreak: false },
+            { name: "TSX (Toronto)", zone: "America/Toronto", open: "09:30", close: "16:00", hasBreak: false }
+        ];
+
+        // --- 状态管理 ---
         let activeZones = [];
         let globalTimestamp = DateTime.now().toMillis();
         let isLive = true;
         let timer = null;
         let dragItem = null;
 
-        initSearchList();
-        
-        addZoneData('Asia/Shanghai');
-        addZoneData('Europe/London');
-        addZoneData('America/New_York');
-        renderGrid();
-        startLoop();
+        // --- 初始化 ---
+        init();
 
-        function initSearchList() {
-            const dataList = document.getElementById('timezone-options');
-            const allZones = Intl.supportedValuesOf('timeZone');
+        function init() {
+            initSearchList();
             
-            const zoneList = allZones.map(z => {
-                const map = CITY_MAPPING[z];
-                const dt = DateTime.now().setZone(z);
-                const offset = dt.toFormat('ZZ');
-                let label = `GMT${offset}`;
-                if (map) label += ` (${map.cities})`;
-                else label += ` - ${z}`;
-                return { value: z, label: label, offsetVal: dt.offset };
-            }).sort((a,b) => a.offsetVal - b.offsetVal);
+            // 默认显示6个时区
+            addZoneData('Asia/Shanghai');
+            addZoneData('Asia/Hong_Kong');
+            addZoneData('Asia/Tokyo');
+            addZoneData('Europe/Berlin'); // 法兰克福
+            addZoneData('Europe/London');
+            addZoneData('America/New_York');
 
-            zoneList.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.value;
-                opt.label = item.label;
-                dataList.appendChild(opt);
-            });
+            renderGrid();
+            renderSidebar(); // 初始渲染侧边栏
+            startLoop();
         }
 
         function startLoop() {
@@ -306,20 +356,92 @@
             timer = setInterval(() => {
                 if (isLive) {
                     globalTimestamp = DateTime.now().toMillis();
-                    updateViewPointers();
+                    updateView();
+                } else {
+                    // 即使暂停，侧边栏状态也需要根据当前的 globalTimestamp 更新
+                    updateSidebarStatus(); 
                 }
             }, 1000);
         }
 
+        // --- 视图渲染：侧边栏 ---
+        function renderSidebar() {
+            const container = document.getElementById('exchange-list');
+            container.innerHTML = EXCHANGES.map((ex, index) => `
+                <div class="market-item" id="mk-${index}">
+                    <div class="market-header">
+                        <span class="market-name">${ex.name}</span>
+                        <span class="status-badge status-close" id="st-${index}">Closed</span>
+                    </div>
+                    <div class="market-time">Hours: ${ex.open} - ${ex.close}</div>
+                    <div class="market-local-time" id="lt-${index}">--:--:--</div>
+                </div>
+            `).join('');
+            updateSidebarStatus();
+        }
+
+        function updateSidebarStatus() {
+            EXCHANGES.forEach((ex, index) => {
+                const dt = DateTime.fromMillis(globalTimestamp).setZone(ex.zone);
+                const localTimeStr = dt.toFormat("HH:mm:ss");
+                
+                // 计算状态
+                const timeVal = dt.hour * 60 + dt.minute; // 当前分钟数
+                
+                const [openH, openM] = ex.open.split(':').map(Number);
+                const openVal = openH * 60 + openM;
+                
+                const [closeH, closeM] = ex.close.split(':').map(Number);
+                const closeVal = closeH * 60 + closeM;
+
+                let status = 'Closed';
+                let statusClass = 'status-close';
+
+                // 简单的开闭市判断 (不包含周末判断，仅基于时间)
+                // 严谨的金融项目需要加入 Weekend 和 Holiday 判断，此处为 Time Reference 核心逻辑
+                const isWeekend = (dt.weekday === 6 || dt.weekday === 7);
+
+                if (!isWeekend && timeVal >= openVal && timeVal < closeVal) {
+                    status = 'Open';
+                    statusClass = 'status-open';
+
+                    // 检查午休
+                    if (ex.hasBreak) {
+                        const [bStartH, bStartM] = ex.breakStart.split(':').map(Number);
+                        const [bEndH, bEndM] = ex.breakEnd.split(':').map(Number);
+                        const breakStartVal = bStartH * 60 + bStartM;
+                        const breakEndVal = bEndH * 60 + bEndM;
+
+                        if (timeVal >= breakStartVal && timeVal < breakEndVal) {
+                            status = 'Break';
+                            statusClass = 'status-break';
+                        }
+                    }
+                }
+
+                // 更新 DOM
+                const statusEl = document.getElementById(`st-${index}`);
+                const timeEl = document.getElementById(`lt-${index}`);
+                
+                if (statusEl) {
+                    statusEl.className = `status-badge ${statusClass}`;
+                    statusEl.innerText = status;
+                }
+                if (timeEl) {
+                    timeEl.innerText = `${localTimeStr}`;
+                }
+            });
+        }
+
+        // --- 视图渲染：主网格 ---
+        function updateView() {
+            updateClockFaces(); // 表盘
+            updateSidebarStatus(); // 侧边栏
+        }
+
         function renderGrid() {
             const container = document.getElementById('clock-grid');
-            const existingIds = Array.from(container.children).map(c => c.dataset.id);
-            const newIds = activeZones.map(z => z.id);
             
-            if (existingIds.join(',') === newIds.join(',')) {
-                return;
-            }
-
             container.innerHTML = '';
 
             activeZones.forEach((item) => {
@@ -340,7 +462,6 @@
                         </div>
                         <button class="btn-close" onclick="removeZone('${item.id}')">×</button>
                     </div>
-
                     <div class="analog-face">
                         ${generateMarkers()}
                         <div class="hand hour" id="h-${item.id}"></div>
@@ -348,18 +469,12 @@
                         <div class="hand sec" id="s-${item.id}"></div>
                         <div class="center-nut"></div>
                     </div>
-
-                    <input type="datetime-local" 
-                           id="inp-${item.id}"
-                           onfocus="pause()"
-                           oninput="manualUpdate(this.value, '${item.zone}')">
+                    <input type="datetime-local" id="inp-${item.id}" onfocus="pause()" oninput="manualUpdate(this.value, '${item.zone}')">
                 `;
-                
                 addDragEvents(card);
                 container.appendChild(card);
             });
-
-            updateViewPointers();
+            updateClockFaces();
         }
 
         function generateMarkers() {
@@ -372,7 +487,7 @@
             return html;
         }
 
-        function updateViewPointers() {
+        function updateClockFaces() {
             activeZones.forEach(item => {
                 const dt = DateTime.fromMillis(globalTimestamp).setZone(item.zone);
                 
@@ -400,11 +515,28 @@
             });
         }
 
-        function addZoneData(zoneStr) {
-            activeZones.push({
-                id: 'z' + Date.now() + Math.random().toString(16).slice(2),
-                zone: zoneStr
+        // --- 逻辑与交互 ---
+        function initSearchList() {
+            const dataList = document.getElementById('timezone-options');
+            const allZones = Intl.supportedValuesOf('timeZone');
+            const zoneList = allZones.map(z => {
+                const map = CITY_MAPPING[z];
+                const dt = DateTime.now().setZone(z);
+                let label = `GMT${dt.toFormat('ZZ')}`;
+                if (map) label += ` (${map.cities})`; else label += ` - ${z}`;
+                return { value: z, label: label, offsetVal: dt.offset };
+            }).sort((a,b) => a.offsetVal - b.offsetVal);
+
+            zoneList.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.label = item.label;
+                dataList.appendChild(opt);
             });
+        }
+
+        function addZoneData(zoneStr) {
+            activeZones.push({ id: 'z'+Date.now()+Math.random().toString(16).slice(2), zone: zoneStr });
         }
 
         function addCurrentSelection() {
@@ -413,9 +545,7 @@
                 addZoneData(val);
                 document.getElementById('zone-input').value = '';
                 renderGrid();
-            } else {
-                alert('请选择有效的时区');
-            }
+            } else { alert('无效时区'); }
         }
 
         function removeZone(id) {
@@ -429,7 +559,7 @@
             const dt = DateTime.fromISO(val, { zone: zone });
             if(dt.isValid) {
                 globalTimestamp = dt.toMillis();
-                updateViewPointers();
+                updateView();
             }
         }
 
@@ -437,7 +567,7 @@
             isLive = false;
             const el = document.getElementById('status-indicator');
             el.innerText = '⏸ PAUSED';
-            el.classList.add('paused');
+            el.className = 'status-dot paused';
         }
 
         function syncNow() {
@@ -445,19 +575,19 @@
             globalTimestamp = DateTime.now().toMillis();
             const el = document.getElementById('status-indicator');
             el.innerText = '● LIVE';
-            el.classList.remove('paused');
-            updateViewPointers();
+            el.className = 'status-dot';
+            updateView();
         }
 
+        // --- 拖拽逻辑 (FLIP Animation) ---
         const container = document.getElementById('clock-grid');
-
+        
         function addDragEvents(card) {
             card.addEventListener('dragstart', (e) => {
                 dragItem = card;
                 setTimeout(() => card.classList.add('dragging'), 0);
                 e.dataTransfer.effectAllowed = 'move';
             });
-
             card.addEventListener('dragend', () => {
                 dragItem = null;
                 card.classList.remove('dragging');
@@ -468,52 +598,41 @@
         container.addEventListener('dragover', e => {
             e.preventDefault();
             if (!dragItem) return;
-
+            
             const siblings = [...container.querySelectorAll('.clock-card:not(.dragging)')];
             let nextSibling = siblings.find(sibling => {
                 const rect = sibling.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
-                
-                const buffer = 30; 
-                
-                if (Math.abs(e.clientX - centerX) < buffer && Math.abs(e.clientY - centerY) < buffer) {
-                   return false; 
-                }
-                
                 return e.clientY < centerY || (e.clientY < rect.bottom && e.clientX < centerX);
             });
-
+            
             if (nextSibling && nextSibling === dragItem.nextSibling) return;
-            if (!nextSibling && dragItem === container.lastElementChild) return;
-
+            
+            // FLIP Animation Prep
             const currentOrder = [...container.children];
             const oldPositions = new Map();
-            currentOrder.forEach(child => {
-                const rect = child.getBoundingClientRect();
-                oldPositions.set(child, { left: rect.left, top: rect.top });
+            currentOrder.forEach(c => {
+                const rect = c.getBoundingClientRect();
+                oldPositions.set(c, {left: rect.left, top: rect.top});
             });
 
-            if (nextSibling) {
-                container.insertBefore(dragItem, nextSibling);
-            } else {
-                container.appendChild(dragItem);
-            }
+            if (nextSibling) container.insertBefore(dragItem, nextSibling);
+            else container.appendChild(dragItem);
 
-            currentOrder.forEach(child => {
-                if (child === dragItem) return;
-                const oldPos = oldPositions.get(child);
-                const newRect = child.getBoundingClientRect();
-                const deltaX = oldPos.left - newRect.left;
-                const deltaY = oldPos.top - newRect.top;
-
-                if (deltaX !== 0 || deltaY !== 0) {
-                    child.style.transition = 'none';
-                    child.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                    
+            // Play Animation
+            currentOrder.forEach(c => {
+                if(c === dragItem) return;
+                const oldPos = oldPositions.get(c);
+                const newRect = c.getBoundingClientRect();
+                const dx = oldPos.left - newRect.left;
+                const dy = oldPos.top - newRect.top;
+                if(dx !== 0 || dy !== 0) {
+                    c.style.transition = 'none';
+                    c.style.transform = `translate(${dx}px, ${dy}px)`;
                     requestAnimationFrame(() => {
-                        child.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0, 1)';
-                        child.style.transform = '';
+                        c.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0, 1)';
+                        c.style.transform = '';
                     });
                 }
             });
@@ -528,7 +647,6 @@
             });
             activeZones = newActiveZones;
         }
-
     </script>
 </body>
 </html>
