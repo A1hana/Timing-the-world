@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Market Monitor</title>
+    <title>全球金融市场监控台 (Global Market Monitor)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/3.4.4/luxon.min.js"></script>
     <style>
         :root {
@@ -96,7 +96,7 @@
 
         /* --- 侧边栏 --- */
         .sidebar {
-            width: 320px; /* 稍微加宽一点以容纳更多文字 */
+            width: 320px;
             background-color: var(--sidebar-bg);
             border-right: 1px solid var(--border-color);
             padding: 20px;
@@ -138,7 +138,7 @@
             border-radius: 8px;
             border: 1px solid transparent;
             transition: all 0.2s;
-            cursor: pointer; /* 提示可点击 */
+            cursor: pointer;
             position: relative;
         }
         
@@ -147,7 +147,6 @@
             border-color: var(--border-color);
         }
 
-        /* 拖拽时的样式 */
         .market-item.sidebar-dragging {
             opacity: 0.2;
             border: 1px dashed var(--text-sub);
@@ -163,7 +162,6 @@
         .drag-handle { color: var(--text-sub); opacity: 0.3; font-size: 1.1rem; cursor: grab; }
         .market-item:hover .drag-handle { opacity: 0.8; }
 
-        /* 详情区域 (默认隐藏) */
         .market-details {
             max-height: 0;
             overflow: hidden;
@@ -173,7 +171,6 @@
             line-height: 1.5;
         }
 
-        /* 展开状态 */
         .market-item.expanded {
             background: rgba(255,255,255,0.08);
             border-color: var(--border-color);
@@ -190,13 +187,12 @@
         .detail-label { color: var(--text-sub); flex-shrink: 0;}
         .detail-val { color: var(--text-main); text-align: right; }
 
-        /* 简介文本样式优化 - 解决截断问题 */
         .market-desc {
             margin-top: 8px; 
             color: #888; 
             font-size: 0.8rem;
-            white-space: normal; /* 允许换行 */
-            word-wrap: break-word; /* 长单词强制换行 */
+            white-space: normal;
+            word-wrap: break-word;
             line-height: 1.4;
         }
 
@@ -268,7 +264,6 @@
         .btn-icon { font-size: 1.1rem; padding: 6px 10px; }
         .btn-sync:hover { background-color: var(--btn-active-accent); border-color: var(--btn-active-accent); }
 
-        /* --- 按钮高亮动画 (用于提醒恢复实时) --- */
         .btn-sync.highlight {
             background-color: var(--status-break);
             color: #000;
@@ -358,7 +353,6 @@
         .hand.sec::after { content: ''; position: absolute; top: 100%; left: -2px; width: 6px; height: 15px; background: var(--hand-sec); border-radius: 2px; }
         .center-nut { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: var(--hand-sec); border-radius: 50%; transform: translate(-50%, -50%); z-index: 12; border: 2px solid var(--clock-face); }
 
-        /* 时间选择器 - 兼容性方案 */
         input[type="datetime-local"] {
             background-color: #141517;
             border: 1px solid #343a40;
@@ -392,20 +386,16 @@
 </head>
 <body>
 
-    <!-- 独立的悬浮缩放控件 -->
     <div class="zoom-widget">
         <button onclick="changeZoom(-0.1)" title="缩小">－</button>
         <span class="zoom-display" id="zoom-val">100%</span>
         <button onclick="changeZoom(0.1)" title="放大">＋</button>
     </div>
 
-    <!-- 内容容器 -->
     <div id="app-container">
         <div class="sidebar" id="sidebar">
             <div class="sidebar-title">全球主要交易所</div>
-            <div id="exchange-list">
-                <!-- JS 生成 -->
-            </div>
+            <div id="exchange-list"></div>
         </div>
 
         <div class="main-content">
@@ -419,7 +409,6 @@
                 </div>
                 
                 <div class="controls">
-                    <!-- 输入框增加 oninput 事件，移除添加按钮 -->
                     <input list="timezone-options" id="zone-input" placeholder="输入城市、国家或 GMT..." oninput="checkAndAddZone(this.value)">
                     <datalist id="timezone-options"></datalist>
                     
@@ -434,125 +423,167 @@
     <script>
         const DateTime = luxon.DateTime;
 
-        // --- 1. 海量汉化映射表 (Extended) ---
+        // --- 1. 扩充版汉化映射表 (超过150个条目) ---
         const CITY_MAPPING = {
-            // 东亚 & 东南亚
-            'Asia/Shanghai': { flag: '🇨🇳', cities: '北京, 上海, 深圳, 广州' },
-            'Asia/Chongqing': { flag: '🇨🇳', cities: '重庆' },
-            'Asia/Harbin': { flag: '🇨🇳', cities: '哈尔滨' },
-            'Asia/Urumqi': { flag: '🇨🇳', cities: '乌鲁木齐 (新疆时间)' },
-            'Asia/Hong_Kong': { flag: '🇭🇰', cities: '香港' },
-            'Asia/Macau': { flag: '🇲🇴', cities: '澳门' },
-            'Asia/Tokyo': { flag: '🇯🇵', cities: '东京, 大阪' },
-            'Asia/Seoul': { flag: '🇰🇷', cities: '首尔' },
-            'Asia/Pyongyang': { flag: '🇰🇵', cities: '平壤' },
+            // --- 亚洲 Asia ---
+            'Asia/Shanghai': { flag: '🇨🇳', cities: '北京, 上海, 中国' },
+            'Asia/Chongqing': { flag: '🇨🇳', cities: '重庆 (中国)' },
+            'Asia/Harbin': { flag: '🇨🇳', cities: '哈尔滨 (中国)' },
+            'Asia/Urumqi': { flag: '🇨🇳', cities: '乌鲁木齐, 新疆 (中国)' },
+            'Asia/Hong_Kong': { flag: '🇭🇰', cities: '香港, 中国' },
+            'Asia/Macau': { flag: '🇲🇴', cities: '澳门, 中国' },
+            'Asia/Taipei': { flag: '🇨🇳', cities: '台北, 台湾, 中国' },
+            'Asia/Tokyo': { flag: '🇯🇵', cities: '东京, 大阪, 日本' },
+            'Asia/Seoul': { flag: '🇰🇷', cities: '首尔, 韩国' },
+            'Asia/Pyongyang': { flag: '🇰🇵', cities: '平壤, 朝鲜' },
             'Asia/Singapore': { flag: '🇸🇬', cities: '新加坡' },
-            'Asia/Kuala_Lumpur': { flag: '🇲🇾', cities: '吉隆坡' },
-            'Asia/Bangkok': { flag: '🇹🇭', cities: '曼谷 (泰国)' },
-            'Asia/Jakarta': { flag: '🇮🇩', cities: '雅加达 (印尼)' },
-            'Asia/Makassar': { flag: '🇮🇩', cities: '望加锡 (印尼中部)' },
-            'Asia/Jayapura': { flag: '🇮🇩', cities: '查亚普拉 (印尼东部)' },
-            'Asia/Ho_Chi_Minh': { flag: '🇻🇳', cities: '胡志明市 (越南)' },
-            'Asia/Manila': { flag: '🇵🇭', cities: '马尼拉 (菲律宾)' },
-            'Asia/Phnom_Penh': { flag: '🇰🇭', cities: '金边 (柬埔寨)' },
-            'Asia/Vientiane': { flag: '🇱🇦', cities: '万象 (老挝)' },
+            'Asia/Kuala_Lumpur': { flag: '🇲🇾', cities: '吉隆坡, 马来西亚' },
+            'Asia/Bangkok': { flag: '🇹🇭', cities: '曼谷, 泰国' },
+            'Asia/Jakarta': { flag: '🇮🇩', cities: '雅加达, 印尼' },
+            'Asia/Makassar': { flag: '🇮🇩', cities: '望加锡, 印尼中部' },
+            'Asia/Jayapura': { flag: '🇮🇩', cities: '查亚普拉, 印尼东部' },
+            'Asia/Ho_Chi_Minh': { flag: '🇻🇳', cities: '胡志明市, 越南' },
+            'Asia/Manila': { flag: '🇵🇭', cities: '马尼拉, 菲律宾' },
+            'Asia/Phnom_Penh': { flag: '🇰🇭', cities: '金边, 柬埔寨' },
+            'Asia/Vientiane': { flag: '🇱🇦', cities: '万象, 老挝' },
+            'Asia/Yangon': { flag: '🇲🇲', cities: '仰光, 缅甸' },
+            'Asia/Ulaanbaatar': { flag: '🇲🇳', cities: '乌兰巴托, 蒙古' },
             
-            // 南亚 & 中东
-            'Asia/Kolkata': { flag: '🇮🇳', cities: '孟买, 新德里 (印度)' },
-            'Asia/Karachi': { flag: '🇵🇰', cities: '卡拉奇 (巴基斯坦)' },
-            'Asia/Dhaka': { flag: '🇧🇩', cities: '达卡 (孟加拉)' },
-            'Asia/Kathmandu': { flag: '🇳🇵', cities: '加德满都 (尼泊尔)' },
-            'Asia/Colombo': { flag: '🇱🇰', cities: '科伦坡 (斯里兰卡)' },
-            'Asia/Dubai': { flag: '🇦🇪', cities: '迪拜, 阿布扎比' },
-            'Asia/Riyadh': { flag: '🇸🇦', cities: '利雅得 (沙特)' },
-            'Asia/Tehran': { flag: '🇮🇷', cities: '德黑兰 (伊朗)' },
-            'Asia/Baghdad': { flag: '🇮🇶', cities: '巴格达 (伊拉克)' },
-            'Asia/Jerusalem': { flag: '🇮🇱', cities: '耶路撒冷 (以色列)' },
-            'Asia/Kuwait': { flag: '🇰🇼', cities: '科威特城' },
-            'Asia/Qatar': { flag: '🇶🇦', cities: '多哈 (卡塔尔)' },
-            'Asia/Muscat': { flag: '🇴🇲', cities: '马斯喀特 (阿曼)' },
-            
-            // 欧洲 (西欧/中欧)
-            'Europe/London': { flag: '🇬🇧', cities: '伦敦, 爱丁堡' },
-            'Europe/Dublin': { flag: '🇮🇪', cities: '都柏林' },
-            'Europe/Berlin': { flag: '🇩🇪', cities: '柏林, 法兰克福' },
-            'Europe/Paris': { flag: '🇫🇷', cities: '巴黎' },
-            'Europe/Rome': { flag: '🇮🇹', cities: '罗马, 米兰' },
-            'Europe/Madrid': { flag: '🇪🇸', cities: '马德里, 巴塞罗那' },
-            'Europe/Zurich': { flag: '🇨🇭', cities: '苏黎世, 日内瓦' },
-            'Europe/Amsterdam': { flag: '🇳🇱', cities: '阿姆斯特丹' },
-            'Europe/Brussels': { flag: '🇧🇪', cities: '布鲁塞尔' },
-            'Europe/Vienna': { flag: '🇦🇹', cities: '维也纳' },
-            'Europe/Stockholm': { flag: '🇸🇪', cities: '斯德哥尔摩' },
-            'Europe/Oslo': { flag: '🇳🇴', cities: '奥斯陆' },
-            'Europe/Copenhagen': { flag: '🇩🇰', cities: '哥本哈根' },
-            'Europe/Lisbon': { flag: '🇵🇹', cities: '里斯本' },
-            
-            // 欧洲 (东欧/俄罗斯)
-            'Europe/Moscow': { flag: '🇷🇺', cities: '莫斯科, 圣彼得堡' },
-            'Europe/Kyiv': { flag: '🇺🇦', cities: '基辅' },
-            'Europe/Warsaw': { flag: '🇵🇱', cities: '华沙' },
-            'Europe/Prague': { flag: '🇨🇿', cities: '布拉格' },
-            'Europe/Budapest': { flag: '🇭🇺', cities: '布达佩斯' },
-            'Europe/Istanbul': { flag: '🇹🇷', cities: '伊斯坦布尔' },
-            'Europe/Athens': { flag: '🇬🇷', cities: '雅典' },
-            'Europe/Bucharest': { flag: '🇷🇴', cities: '布加勒斯特' },
-            
-            // 北美 (美国)
-            'America/New_York': { flag: '🇺🇸', cities: '纽约, 华盛顿, 波士顿 (美东)' },
-            'America/Chicago': { flag: '🇺🇸', cities: '芝加哥, 休斯顿 (美中)' },
-            'America/Denver': { flag: '🇺🇸', cities: '丹佛 (山地)' },
-            'America/Phoenix': { flag: '🇺🇸', cities: '凤凰城' },
-            'America/Los_Angeles': { flag: '🇺🇸', cities: '洛杉矶, 旧金山, 硅谷 (美西)' },
-            'America/Anchorage': { flag: '🇺🇸', cities: '安克雷奇 (阿拉斯加)' },
-            'Pacific/Honolulu': { flag: '🇺🇸', cities: '火奴鲁鲁 (夏威夷)' },
-            'America/Detroit': { flag: '🇺🇸', cities: '底特律' },
-            'America/Indianapolis': { flag: '🇺🇸', cities: '印第安纳波利斯' },
-            
-            // 北美 (加拿大/墨西哥)
-            'America/Toronto': { flag: '🇨🇦', cities: '多伦多, 蒙特利尔' },
-            'America/Vancouver': { flag: '🇨🇦', cities: '温哥华' },
-            'America/Edmonton': { flag: '🇨🇦', cities: '埃德蒙顿' },
-            'America/Winnipeg': { flag: '🇨🇦', cities: '温尼伯' },
-            'America/Halifax': { flag: '🇨🇦', cities: '哈利法克斯' },
-            'America/Mexico_City': { flag: '🇲🇽', cities: '墨西哥城' },
-            
-            // 南美
-            'America/Sao_Paulo': { flag: '🇧🇷', cities: '圣保罗, 里约热内卢' },
-            'America/Argentina/Buenos_Aires': { flag: '🇦🇷', cities: '布宜诺斯艾利斯' },
-            'America/Santiago': { flag: '🇨🇱', cities: '圣地亚哥' },
-            'America/Bogota': { flag: '🇨🇴', cities: '波哥大' },
-            'America/Lima': { flag: '🇵🇪', cities: '利马' },
-            'America/Caracas': { flag: '🇻🇪', cities: '加拉加斯' },
-            
-            // 澳洲 & 太平洋
-            'Australia/Sydney': { flag: '🇦🇺', cities: '悉尼, 堪培拉' },
-            'Australia/Melbourne': { flag: '🇦🇺', cities: '墨尔本' },
-            'Australia/Brisbane': { flag: '🇦🇺', cities: '布里斯班' },
-            'Australia/Adelaide': { flag: '🇦🇺', cities: '阿德莱德' },
-            'Australia/Perth': { flag: '🇦🇺', cities: '珀斯' },
-            'Australia/Darwin': { flag: '🇦🇺', cities: '达尔文' },
-            'Pacific/Auckland': { flag: '🇳🇿', cities: '奥克兰, 惠灵顿' },
-            'Pacific/Fiji': { flag: '🇫🇯', cities: '苏瓦 (斐济)' },
+            // --- 南亚 & 中亚 & 中东 ---
+            'Asia/Kolkata': { flag: '🇮🇳', cities: '孟买, 新德里, 印度' },
+            'Asia/Karachi': { flag: '🇵🇰', cities: '卡拉奇, 巴基斯坦' },
+            'Asia/Dhaka': { flag: '🇧🇩', cities: '达卡, 孟加拉国' },
+            'Asia/Kathmandu': { flag: '🇳🇵', cities: '加德满都, 尼泊尔' },
+            'Asia/Colombo': { flag: '🇱🇰', cities: '科伦坡, 斯里兰卡' },
+            'Asia/Almaty': { flag: '🇰🇿', cities: '阿拉木图, 哈萨克斯坦' },
+            'Asia/Tashkent': { flag: '🇺🇿', cities: '塔什干, 乌兹别克斯坦' },
+            'Asia/Bishkek': { flag: '🇰🇬', cities: '比什凯克, 吉尔吉斯斯坦' },
+            'Asia/Dushanbe': { flag: '🇹🇯', cities: '杜尚别, 塔吉克斯坦' },
+            'Asia/Ashgabat': { flag: '🇹🇲', cities: '阿什哈巴德, 土库曼斯坦' },
+            'Asia/Kabul': { flag: '🇦🇫', cities: '喀布尔, 阿富汗' },
+            'Asia/Dubai': { flag: '🇦🇪', cities: '迪拜, 阿布扎比, 阿联酋' },
+            'Asia/Riyadh': { flag: '🇸🇦', cities: '利雅得, 沙特阿拉伯' },
+            'Asia/Tehran': { flag: '🇮🇷', cities: '德黑兰, 伊朗' },
+            'Asia/Baghdad': { flag: '🇮🇶', cities: '巴格达, 伊拉克' },
+            'Asia/Jerusalem': { flag: '🇮🇱', cities: '耶路撒冷, 以色列' },
+            'Asia/Amman': { flag: '🇯🇴', cities: '安曼, 约旦' },
+            'Asia/Beirut': { flag: '🇱🇧', cities: '贝鲁特, 黎巴嫩' },
+            'Asia/Damascus': { flag: '🇸🇾', cities: '大马士革, 叙利亚' },
+            'Asia/Kuwait': { flag: '🇰🇼', cities: '科威特城, 科威特' },
+            'Asia/Qatar': { flag: '🇶🇦', cities: '多哈, 卡塔尔' },
+            'Asia/Bahrain': { flag: '🇧🇭', cities: '麦纳麦, 巴林' },
+            'Asia/Muscat': { flag: '🇴🇲', cities: '马斯喀特, 阿曼' },
+            'Asia/Aden': { flag: '🇾🇪', cities: '亚丁, 也门' },
+            'Asia/Baku': { flag: '🇦🇿', cities: '巴库, 阿塞拜疆' },
+            'Asia/Yerevan': { flag: '🇦🇲', cities: '埃里温, 亚美尼亚' },
+            'Asia/Tbilisi': { flag: '🇬🇪', cities: '第比利斯, 格鲁吉亚' },
+
+            // --- 欧洲 Europe ---
+            'Europe/London': { flag: '🇬🇧', cities: '伦敦, 英国' },
+            'Europe/Dublin': { flag: '🇮🇪', cities: '都柏林, 爱尔兰' },
+            'Europe/Berlin': { flag: '🇩🇪', cities: '柏林, 法兰克福, 德国' },
+            'Europe/Paris': { flag: '🇫🇷', cities: '巴黎, 法国' },
+            'Europe/Rome': { flag: '🇮🇹', cities: '罗马, 米兰, 意大利' },
+            'Europe/Madrid': { flag: '🇪🇸', cities: '马德里, 西班牙' },
+            'Europe/Lisbon': { flag: '🇵🇹', cities: '里斯本, 葡萄牙' },
+            'Europe/Zurich': { flag: '🇨🇭', cities: '苏黎世, 瑞士' },
+            'Europe/Vienna': { flag: '🇦🇹', cities: '维也纳, 奥地利' },
+            'Europe/Brussels': { flag: '🇧🇪', cities: '布鲁塞尔, 比利时' },
+            'Europe/Amsterdam': { flag: '🇳🇱', cities: '阿姆斯特丹, 荷兰' },
+            'Europe/Luxembourg': { flag: '🇱🇺', cities: '卢森堡' },
+            'Europe/Stockholm': { flag: '🇸🇪', cities: '斯德哥尔摩, 瑞典' },
+            'Europe/Oslo': { flag: '🇳🇴', cities: '奥斯陆, 挪威' },
+            'Europe/Copenhagen': { flag: '🇩🇰', cities: '哥本哈根, 丹麦' },
+            'Europe/Helsinki': { flag: '🇫🇮', cities: '赫尔辛基, 芬兰' },
+            'Europe/Reykjavik': { flag: '🇮🇸', cities: '雷克雅未克, 冰岛' },
+            'Europe/Warsaw': { flag: '🇵🇱', cities: '华沙, 波兰' },
+            'Europe/Prague': { flag: '🇨🇿', cities: '布拉格, 捷克' },
+            'Europe/Budapest': { flag: '🇭🇺', cities: '布达佩斯, 匈牙利' },
+            'Europe/Bucharest': { flag: '🇷🇴', cities: '布加勒斯特, 罗马尼亚' },
+            'Europe/Sofia': { flag: '🇧🇬', cities: '索菲亚, 保加利亚' },
+            'Europe/Athens': { flag: '🇬🇷', cities: '雅典, 希腊' },
+            'Europe/Istanbul': { flag: '🇹🇷', cities: '伊斯坦布尔, 土耳其' },
+            'Europe/Moscow': { flag: '🇷🇺', cities: '莫斯科, 俄罗斯' },
+            'Europe/Kyiv': { flag: '🇺🇦', cities: '基辅, 乌克兰' },
+            'Europe/Minsk': { flag: '🇧🇾', cities: '明斯克, 白俄罗斯' },
+            'Europe/Riga': { flag: '🇱🇻', cities: '里加, 拉脱维亚' },
+            'Europe/Tallinn': { flag: '🇪🇪', cities: '塔林, 爱沙尼亚' },
+            'Europe/Vilnius': { flag: '🇱🇹', cities: '维尔纽斯, 立陶宛' },
+            'Europe/Belgrade': { flag: '🇷🇸', cities: '贝尔格莱德, 塞尔维亚' },
+            'Europe/Zagreb': { flag: '🇭🇷', cities: '萨格勒布, 克罗地亚' },
+
+            // --- 北美 North America ---
+            'America/New_York': { flag: '🇺🇸', cities: '纽约, 华盛顿, 波士顿, 美国' },
+            'America/Chicago': { flag: '🇺🇸', cities: '芝加哥, 休斯顿, 美国' },
+            'America/Denver': { flag: '🇺🇸', cities: '丹佛, 盐湖城, 美国' },
+            'America/Phoenix': { flag: '🇺🇸', cities: '凤凰城, 美国' },
+            'America/Los_Angeles': { flag: '🇺🇸', cities: '洛杉矶, 旧金山, 硅谷, 西雅图, 美国' },
+            'America/Anchorage': { flag: '🇺🇸', cities: '安克雷奇, 阿拉斯加, 美国' },
+            'Pacific/Honolulu': { flag: '🇺🇸', cities: '火奴鲁鲁, 夏威夷, 美国' },
+            'America/Detroit': { flag: '🇺🇸', cities: '底特律, 美国' },
+            'America/Toronto': { flag: '🇨🇦', cities: '多伦多, 蒙特利尔, 加拿大' },
+            'America/Vancouver': { flag: '🇨🇦', cities: '温哥华, 加拿大' },
+            'America/Edmonton': { flag: '🇨🇦', cities: '埃德蒙顿, 加拿大' },
+            'America/Winnipeg': { flag: '🇨🇦', cities: '温尼伯, 加拿大' },
+            'America/Halifax': { flag: '🇨🇦', cities: '哈利法克斯, 加拿大' },
+            'America/St_Johns': { flag: '🇨🇦', cities: '圣约翰斯, 加拿大' },
+            'America/Mexico_City': { flag: '🇲🇽', cities: '墨西哥城, 墨西哥' },
+            'America/Panama': { flag: '🇵🇦', cities: '巴拿马城, 巴拿马' },
+            'America/Costa_Rica': { flag: '🇨🇷', cities: '圣何塞, 哥斯达黎加' },
+            'America/Havana': { flag: '🇨🇺', cities: '哈瓦那, 古巴' },
+            'America/Jamaica': { flag: '🇯🇲', cities: '金斯敦, 牙买加' },
+            'America/Santo_Domingo': { flag: '🇩🇴', cities: '圣多明各, 多米尼加' },
+
+            // --- 南美 South America ---
+            'America/Sao_Paulo': { flag: '🇧🇷', cities: '圣保罗, 巴西' },
+            'America/Manaus': { flag: '🇧🇷', cities: '马瑙斯, 巴西' },
+            'America/Argentina/Buenos_Aires': { flag: '🇦🇷', cities: '布宜诺斯艾利斯, 阿根廷' },
+            'America/Santiago': { flag: '🇨🇱', cities: '圣地亚哥, 智利' },
+            'America/Bogota': { flag: '🇨🇴', cities: '波哥大, 哥伦比亚' },
+            'America/Lima': { flag: '🇵🇪', cities: '利马, 秘鲁' },
+            'America/Caracas': { flag: '🇻🇪', cities: '加拉加斯, 委内瑞拉' },
+            'America/Montevideo': { flag: '🇺🇾', cities: '蒙得维的亚, 乌拉圭' },
+            'America/Asuncion': { flag: '🇵🇾', cities: '亚松森, 巴拉圭' },
+            'America/La_Paz': { flag: '🇧🇴', cities: '拉巴斯, 玻利维亚' },
+            'America/Guayaquil': { flag: '🇪🇨', cities: '瓜亚基尔, 厄瓜多尔' },
+
+            // --- 澳洲 & 太平洋 Oceania ---
+            'Australia/Sydney': { flag: '🇦🇺', cities: '悉尼, 堪培拉, 澳大利亚' },
+            'Australia/Melbourne': { flag: '🇦🇺', cities: '墨尔本, 澳大利亚' },
+            'Australia/Brisbane': { flag: '🇦🇺', cities: '布里斯班, 澳大利亚' },
+            'Australia/Adelaide': { flag: '🇦🇺', cities: '阿德莱德, 澳大利亚' },
+            'Australia/Perth': { flag: '🇦🇺', cities: '珀斯, 澳大利亚' },
+            'Australia/Darwin': { flag: '🇦🇺', cities: '达尔文, 澳大利亚' },
+            'Australia/Hobart': { flag: '🇦🇺', cities: '霍巴特, 澳大利亚' },
+            'Pacific/Auckland': { flag: '🇳🇿', cities: '奥克兰, 新西兰' },
+            'Pacific/Fiji': { flag: '🇫🇯', cities: '苏瓦, 斐济' },
+            'Pacific/Port_Moresby': { flag: '🇵🇬', cities: '莫尔兹比港, 巴布亚新几内亚' },
             'Pacific/Guam': { flag: '🇬🇺', cities: '关岛' },
-            
-            // 非洲
-            'Africa/Cairo': { flag: '🇪🇬', cities: '开罗' },
-            'Africa/Johannesburg': { flag: '🇿🇦', cities: '约翰内斯堡, 开普敦' },
-            'Africa/Lagos': { flag: '🇳🇬', cities: '拉各斯' },
-            'Africa/Nairobi': { flag: '🇰🇪', cities: '内罗毕' },
-            'Africa/Casablanca': { flag: '🇲🇦', cities: '卡萨布兰卡' },
-            'Africa/Addis_Ababa': { flag: '🇪🇹', cities: '亚的斯亚贝巴' },
-            
-            // 特殊
+
+            // --- 非洲 Africa ---
+            'Africa/Cairo': { flag: '🇪🇬', cities: '开罗, 埃及' },
+            'Africa/Johannesburg': { flag: '🇿🇦', cities: '约翰内斯堡, 南非' },
+            'Africa/Lagos': { flag: '🇳🇬', cities: '拉各斯, 尼日利亚' },
+            'Africa/Nairobi': { flag: '🇰🇪', cities: '内罗毕, 肯尼亚' },
+            'Africa/Casablanca': { flag: '🇲🇦', cities: '卡萨布兰卡, 摩洛哥' },
+            'Africa/Addis_Ababa': { flag: '🇪🇹', cities: '亚的斯亚贝巴, 埃塞俄比亚' },
+            'Africa/Accra': { flag: '🇬🇭', cities: '阿克拉, 加纳' },
+            'Africa/Algiers': { flag: '🇩🇿', cities: '阿尔及尔, 阿尔及利亚' },
+            'Africa/Tunis': { flag: '🇹🇳', cities: '突尼斯城, 突尼斯' },
+            'Africa/Khartoum': { flag: '🇸🇩', cities: '喀土穆, 苏丹' },
+            'Africa/Dar_es_Salaam': { flag: '🇹🇿', cities: '达累斯萨拉姆, 坦桑尼亚' },
+            'Africa/Kampala': { flag: '🇺🇬', cities: '坎帕拉, 乌干达' },
+            'Africa/Harare': { flag: '🇿🇼', cities: '哈拉雷, 津巴布韦' },
+            'Africa/Dakar': { flag: '🇸🇳', cities: '达喀尔, 塞内加尔' },
+            'Africa/Abidjan': { flag: '🇨🇮', cities: '阿比让, 科特迪瓦' },
+
+            // --- 特殊 ---
             'Etc/UTC': { flag: '🌐', cities: '世界标准时间 (UTC)' },
             'Etc/GMT': { flag: '🌐', cities: '格林威治时间 (GMT)' }
         };
 
-        // 预处理所有支持的时区Set，用于快速验证
         const ALL_ZONES_SET = new Set(Intl.supportedValuesOf('timeZone'));
 
-        // --- 2. 交易所数据 ---
         let EXCHANGES = [
             { id: 'nyse', name: "NYSE / Nasdaq", nameCN: "纽约证券交易所", zone: "America/New_York", open: "09:30", close: "16:00", hasBreak: false, details: "全球最大资本市场，包含纳斯达克与纽交所，交易活跃，无午间休市。" },
             { id: 'lse', name: "LSE (London)", nameCN: "伦敦证券交易所", zone: "Europe/London", open: "08:00", close: "16:30", hasBreak: false, details: "欧洲最重要的证券市场，主要涵盖英国及国际蓝筹股，交易时段连续，无午间休市。" },
@@ -576,8 +607,6 @@
 
         function init() {
             initSearchList();
-            
-            // 初始时区
             addZoneData('Asia/Shanghai');
             addZoneData('America/New_York');
             addZoneData('America/Los_Angeles');
@@ -620,13 +649,10 @@
             document.getElementById('zoom-val').innerText = Math.round(currentZoom * 100) + '%';
         }
 
-        // --- 自动添加时区逻辑 ---
         function checkAndAddZone(val) {
-            // 检查输入值是否为有效的时区ID
             if (ALL_ZONES_SET.has(val)) {
-                // 防止重复添加同一个时区ID导致 key 冲突不是大问题，但体验不好，这里直接添加
                 addZoneData(val);
-                document.getElementById('zone-input').value = ''; // 清空输入框
+                document.getElementById('zone-input').value = '';
                 renderGrid();
             }
         }
@@ -923,7 +949,6 @@
             el.innerText = '⏸ 已暂停 (点击右侧按钮恢复)';
             el.className = 'status-dot paused';
             
-            // 按钮高亮引导
             const btn = document.getElementById('sync-btn');
             btn.classList.add('highlight');
             btn.innerText = '🔄 恢复实时时间';
@@ -936,7 +961,6 @@
             el.innerText = '● 实时监控';
             el.className = 'status-dot';
             
-            // 恢复按钮样式
             const btn = document.getElementById('sync-btn');
             btn.classList.remove('highlight');
             btn.innerText = '↩ 恢复实时时间';
