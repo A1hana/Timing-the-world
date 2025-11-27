@@ -17,9 +17,9 @@
             --border-color: #2c2e33;
             
             /* 状态色 */
-            --status-open: #51cf66;  /* 开盘绿 */
-            --status-close: #fa5252; /* 收盘红 */
-            --status-break: #fab005; /* 午休黄 */
+            --status-open: #51cf66;
+            --status-close: #fa5252;
+            --status-break: #fab005;
             
             /* 按钮与交互 */
             --btn-bg: #2c2e33;
@@ -43,11 +43,12 @@
             color: var(--text-main);
             margin: 0;
             height: 100vh;
-            overflow: hidden; /* 防止双重滚动条 */
+            overflow: hidden;
             display: flex;
+            transition: zoom 0.2s; /* 平滑缩放 */
         }
 
-        /* --- 左侧侧边栏 (交易所参考) --- */
+        /* --- 左侧侧边栏 --- */
         .sidebar {
             width: 280px;
             background-color: var(--sidebar-bg);
@@ -57,6 +58,17 @@
             flex-direction: column;
             overflow-y: auto;
             flex-shrink: 0;
+            /* 折叠动画 */
+            transition: width 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+            white-space: nowrap; /* 防止折叠时文字换行 */
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            padding: 20px 0; /* 保持上下padding，左右为0 */
+            overflow: hidden;
+            border-right: none;
+            opacity: 0;
         }
 
         .sidebar-title {
@@ -67,6 +79,9 @@
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .market-item {
@@ -105,13 +120,10 @@
             gap: 4px;
         }
         .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; display: block; }
-        
         .status-open { color: var(--status-open); background: rgba(81, 207, 102, 0.1); }
         .status-open::before { background: var(--status-open); }
-        
         .status-close { color: var(--text-sub); background: rgba(255,255,255,0.05); }
         .status-close::before { background: var(--text-sub); }
-        
         .status-break { color: var(--status-break); background: rgba(250, 176, 5, 0.1); }
         .status-break::before { background: var(--status-break); }
 
@@ -148,20 +160,9 @@
 
         .controls { display: flex; gap: 12px; align-items: center; }
 
-        input[list] {
-            background: #141517;
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 8px 12px;
-            width: 250px;
-            border-radius: 4px;
-            font-family: inherit;
-            outline: none;
-        }
-        input[list]:focus { border-color: #495057; }
-        
+        /* 通用按钮样式 */
         button {
-            padding: 8px 16px;
+            padding: 8px 12px;
             border: 1px solid var(--btn-border);
             background-color: var(--btn-bg);
             color: var(--btn-text);
@@ -169,10 +170,42 @@
             cursor: pointer;
             font-size: 0.9rem;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
         }
         button:hover { background-color: var(--btn-hover); color: #fff; border-color: #5c5f66; }
+        
+        .btn-icon { font-size: 1.1rem; padding: 6px 10px; }
         .btn-sync:hover { background-color: var(--btn-active-accent); border-color: var(--btn-active-accent); }
 
+        /* 缩放控件组 */
+        .zoom-group {
+            display: flex;
+            align-items: center;
+            background: #141517;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-right: 15px;
+        }
+        .zoom-group button { border: none; background: transparent; border-radius: 0; padding: 6px 10px;}
+        .zoom-group button:hover { background: var(--btn-hover); }
+        .zoom-display { font-size: 0.85rem; padding: 0 8px; color: var(--text-sub); min-width: 45px; text-align: center; }
+
+        input[list] {
+            background: #141517;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 12px;
+            width: 200px;
+            border-radius: 4px;
+            font-family: inherit;
+            outline: none;
+        }
+        input[list]:focus { border-color: #495057; }
+        
         /* 网格容器 */
         .grid-container {
             display: grid;
@@ -241,15 +274,10 @@
             color-scheme: dark; 
         }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-            opacity: 0.6;
-            transition: opacity 0.2s;
-            padding: 4px; 
+            cursor: pointer; opacity: 0.6; transition: opacity 0.2s; padding: 4px; 
         }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-            opacity: 1;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            opacity: 1; background-color: rgba(255, 255, 255, 0.1); border-radius: 4px;
         }
 
         /* 滚动条美化 */
@@ -262,8 +290,11 @@
 <body>
 
     <!-- 左侧交易所状态栏 -->
-    <div class="sidebar">
-        <div class="sidebar-title">Global Exchanges</div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-title">
+            Global Exchanges
+            <!-- 侧边栏内部关闭按钮 (可选) -->
+        </div>
         <div id="exchange-list">
             <!-- JS 生成 -->
         </div>
@@ -272,12 +303,24 @@
     <!-- 主内容区 -->
     <div class="main-content">
         <div class="header">
-            <div style="display: flex; align-items: center;">
-                <h1>Global Market Monitor</h1>
-                <span id="status-indicator" class="status-dot">● LIVE</span>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <!-- 侧边栏切换按钮 -->
+                <button class="btn-icon" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
+                
+                <div style="display: flex; align-items: center;">
+                    <h1>Global Market Monitor</h1>
+                    <span id="status-indicator" class="status-dot">● LIVE</span>
+                </div>
             </div>
             
             <div class="controls">
+                <!-- 缩放控件 -->
+                <div class="zoom-group">
+                    <button onclick="changeZoom(-0.1)">-</button>
+                    <span class="zoom-display" id="zoom-val">100%</span>
+                    <button onclick="changeZoom(0.1)">+</button>
+                </div>
+
                 <input list="timezone-options" id="zone-input" placeholder="输入城市或 GMT+X...">
                 <datalist id="timezone-options"></datalist>
                 
@@ -294,7 +337,7 @@
 
         // --- 配置数据 ---
 
-        // 1. 扩充后的城市/时区映射
+        // 1. 扩充后的城市/时区映射 (已移除台北)
         const CITY_MAPPING = {
             // 亚洲
             'Asia/Shanghai': { flag: '🇨🇳', cities: '北京, 上海' },
@@ -305,7 +348,6 @@
             'Asia/Dubai': { flag: '🇦🇪', cities: '迪拜' },
             'Asia/Bangkok': { flag: '🇹🇭', cities: '曼谷' },
             'Asia/Kolkata': { flag: '🇮🇳', cities: '孟买, 新德里' },
-            'Asia/Taipei': { flag: '🇹🇼', cities: '台北' },
             
             // 欧洲
             'Europe/London': { flag: '🇬🇧', cities: '伦敦' },
@@ -330,8 +372,7 @@
             'Pacific/Auckland': { flag: '🇳🇿', cities: '奥克兰' }
         };
 
-        // 2. 交易所交易时间数据 (Local Time)
-        // 注意：这里采用了标准的交易时间，暂未包含特殊的盘前盘后或节假日逻辑，作为参考使用。
+        // 2. 交易所交易时间数据
         const EXCHANGES = [
             { name: "NYSE/Nasdaq (New York)", zone: "America/New_York", open: "09:30", close: "16:00", hasBreak: false },
             { name: "LSE (London)", zone: "Europe/London", open: "08:00", close: "16:30", hasBreak: false },
@@ -349,6 +390,7 @@
         let isLive = true;
         let timer = null;
         let dragItem = null;
+        let currentZoom = 1.0;
 
         // --- 初始化 ---
         init();
@@ -356,7 +398,7 @@
         function init() {
             initSearchList();
             
-            // 默认显示6个时区：北京、纽约、洛杉矶、伦敦、东京、悉尼
+            // 默认显示6个时区
             addZoneData('Asia/Shanghai');       // 北京
             addZoneData('America/New_York');    // 纽约
             addZoneData('America/Los_Angeles'); // 洛杉矶
@@ -376,10 +418,29 @@
                     globalTimestamp = DateTime.now().toMillis();
                     updateView();
                 } else {
-                    // 即使暂停，侧边栏状态也需要根据当前的 globalTimestamp 更新
                     updateSidebarStatus(); 
                 }
             }, 1000);
+        }
+
+        // --- 功能：侧边栏切换 ---
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('collapsed');
+        }
+
+        // --- 功能：页面缩放 ---
+        function changeZoom(delta) {
+            currentZoom += delta;
+            // 限制范围 0.5 - 2.0
+            if (currentZoom < 0.5) currentZoom = 0.5;
+            if (currentZoom > 2.0) currentZoom = 2.0;
+            
+            // 应用缩放
+            document.body.style.zoom = currentZoom;
+            
+            // 更新显示
+            document.getElementById('zoom-val').innerText = Math.round(currentZoom * 100) + '%';
         }
 
         // --- 视图渲染：侧边栏 ---
@@ -403,8 +464,7 @@
                 const dt = DateTime.fromMillis(globalTimestamp).setZone(ex.zone);
                 const localTimeStr = dt.toFormat("HH:mm:ss");
                 
-                // 计算状态
-                const timeVal = dt.hour * 60 + dt.minute; // 当前分钟数
+                const timeVal = dt.hour * 60 + dt.minute; 
                 
                 const [openH, openM] = ex.open.split(':').map(Number);
                 const openVal = openH * 60 + openM;
@@ -415,14 +475,12 @@
                 let status = 'Closed';
                 let statusClass = 'status-close';
 
-                // 简单的开闭市判断 (不包含周末判断，仅基于时间)
                 const isWeekend = (dt.weekday === 6 || dt.weekday === 7);
 
                 if (!isWeekend && timeVal >= openVal && timeVal < closeVal) {
                     status = 'Open';
                     statusClass = 'status-open';
 
-                    // 检查午休
                     if (ex.hasBreak) {
                         const [bStartH, bStartM] = ex.breakStart.split(':').map(Number);
                         const [bEndH, bEndM] = ex.breakEnd.split(':').map(Number);
@@ -436,7 +494,6 @@
                     }
                 }
 
-                // 更新 DOM
                 const statusEl = document.getElementById(`st-${index}`);
                 const timeEl = document.getElementById(`lt-${index}`);
                 
@@ -452,13 +509,12 @@
 
         // --- 视图渲染：主网格 ---
         function updateView() {
-            updateClockFaces(); // 表盘
-            updateSidebarStatus(); // 侧边栏
+            updateClockFaces(); 
+            updateSidebarStatus(); 
         }
 
         function renderGrid() {
             const container = document.getElementById('clock-grid');
-            
             container.innerHTML = '';
 
             activeZones.forEach((item) => {
@@ -596,7 +652,7 @@
             updateView();
         }
 
-        // --- 拖拽逻辑 (FLIP Animation) ---
+        // --- 拖拽逻辑 ---
         const container = document.getElementById('clock-grid');
         
         function addDragEvents(card) {
@@ -626,7 +682,6 @@
             
             if (nextSibling && nextSibling === dragItem.nextSibling) return;
             
-            // FLIP Animation Prep
             const currentOrder = [...container.children];
             const oldPositions = new Map();
             currentOrder.forEach(c => {
@@ -637,7 +692,6 @@
             if (nextSibling) container.insertBefore(dragItem, nextSibling);
             else container.appendChild(dragItem);
 
-            // Play Animation
             currentOrder.forEach(c => {
                 if(c === dragItem) return;
                 const oldPos = oldPositions.get(c);
