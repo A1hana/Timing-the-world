@@ -37,6 +37,10 @@
             --hand-sec: #c92a2a;
         }
 
+        html {
+            background-color: var(--bg-color); /* 确保缩小时背景一致 */
+        }
+
         body {
             font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
             background-color: var(--bg-color);
@@ -45,7 +49,7 @@
             height: 100vh;
             overflow: hidden;
             display: flex;
-            transition: zoom 0.2s; /* 平滑缩放 */
+            transition: zoom 0.2s, height 0.2s; /* 增加高度的平滑过渡 */
         }
 
         /* --- 左侧侧边栏 --- */
@@ -337,7 +341,7 @@
 
         // --- 配置数据 ---
 
-        // 1. 城市/时区映射
+        // 1. 扩充后的城市/时区映射 (已移除台北)
         const CITY_MAPPING = {
             // 亚洲
             'Asia/Shanghai': { flag: '🇨🇳', cities: '北京, 上海' },
@@ -438,6 +442,10 @@
             
             // 应用缩放
             document.body.style.zoom = currentZoom;
+            
+            // 修复：动态调整高度以适配视口
+            // 当 zoom 变大时，height 需要变小，反之亦然，以保持视觉上填满屏幕
+            document.body.style.height = (100 / currentZoom) + "vh";
             
             // 更新显示
             document.getElementById('zoom-val').innerText = Math.round(currentZoom * 100) + '%';
@@ -721,4 +729,3 @@
     </script>
 </body>
 </html>
-
